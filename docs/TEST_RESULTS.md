@@ -34,3 +34,19 @@ Tests  61 passed (61)
 - 本文テキストの抽出で見出しと段落が連結し、サービス名に誤った語が混入 → ブロック要素単位の抽出と列挙文の厳格な判定に変更。
 - 既存サイトの文章をモックのリード文に転載していた → 事実（サービス名・地域・アクセス）から新たに文を作る方式に変更。
 - スマートフォン幅でヒーロー部分の左右余白がなかった → 修正。
+
+## 6. 再実行記録（2026-11-08・Claude Code によるクラウド環境での確認）
+
+実行環境: Ubuntu 24.04.5 LTS（Linux 6.18, x86_64）, Node.js v22.23.4, npm 10.9.9, Google Chrome for Testing 153.0.8010.12。Microsoft Edge なし。
+
+| コマンド | 結果 |
+|---|---|
+| `npm ci` | 成功 |
+| `npm run typecheck` | エラー 0 |
+| `npm test` | 5 ファイル・61 テストすべて成功 |
+| `npm run doctor` | Node OK、ブラウザ OK（chrome）、Claude Code インストール済み、Codex CLI 未インストール |
+| `npm run e2e` | すべて成功（[verification/E2E_RESULT.md](verification/E2E_RESULT.md) とスクリーンショットを更新） |
+
+修正が必要な不具合は見つかりませんでした。
+
+> この環境は Linux のため、[SETUP_WINDOWS.md](SETUP_WINDOWS.md) の「5. Windows で確認していただく項目」は**実施していません（Windows 未確認）**。
