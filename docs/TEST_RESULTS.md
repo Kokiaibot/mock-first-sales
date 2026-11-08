@@ -9,8 +9,8 @@
 
 ## 2. 自動テスト（`npm test`）
 ```
-Test Files  4 passed (4)
-Tests  58 passed (58)
+Test Files  5 passed (5)
+Tests  61 passed (61)
 ```
 
 | ファイル | 内容 |
@@ -19,6 +19,7 @@ Tests  58 passed (58)
 | tests/flow.test.ts | HTTP 経由の受け入れテスト。初期設定・ログイン・ロック・CSRF・Host 検証・検索条件の保存/再表示・CSV 取込（除外/統合/数式拒否）・3 社の分析→モック→営業文・モックの差異・PC/SP 表示崩れなし・デモ遷移・営業文とプレビューの一致・閲覧コード/期限/失効/再発行・未承認送信拒否・本文/宛先変更で承認解除・禁止/配信停止/重複のブロック・模擬送信の記録・要確認で再送しない・不正日付・ジョブ再実行/重複防止/再起動復元・費用履歴 |
 | tests/backup.test.ts | バックアップ・復元、秘密情報の除外、不正フォルダの拒否 |
 | tests/codex.test.ts | 偽の codex で呼び出し契約を検証（read-only サンドボックス、標準入力、API キーを渡さない） |
+| tests/claude.test.ts | 偽の claude で呼び出し契約を検証（-p・ツール禁止・1 ターン・空フォルダ・API キー/トークンを渡さない・利用上限エラー）、管理画面から Claude を選び確認→同意→検証→反映まで |
 
 ## 3. ブラウザ操作による検証（`npm run e2e`）
 32 ステップすべて成功。詳細とスクリーンショットは [verification/E2E_RESULT.md](verification/E2E_RESULT.md)。

@@ -17,7 +17,7 @@ export interface CodexStatus {
 }
 
 const isWin = process.platform === 'win32';
-const BIN = process.env.CODEX_BIN || 'codex';
+const bin = () => process.env.CODEX_BIN || 'codex';
 
 function childEnv(): NodeJS.ProcessEnv {
   const env = { ...process.env };
@@ -28,9 +28,9 @@ function childEnv(): NodeJS.ProcessEnv {
 
 export function codexStatus(): CodexStatus {
   try {
-    const v = spawnSync(BIN, ['--version'], { encoding: 'utf8', timeout: 10_000, shell: isWin, env: childEnv() });
+    const v = spawnSync(bin(), ['--version'], { encoding: 'utf8', timeout: 10_000, shell: isWin, env: childEnv() });
     if (v.status !== 0) return { installed: false, version: '', loggedIn: 'unknown', detail: 'codex コマンドが見つかりません（npm i -g @openai/codex でインストール）' };
-    const s = spawnSync(BIN, ['login', 'status'], { encoding: 'utf8', timeout: 10_000, shell: isWin, env: childEnv() });
+    const s = spawnSync(bin(), ['login', 'status'], { encoding: 'utf8', timeout: 10_000, shell: isWin, env: childEnv() });
     const out = `${s.stdout ?? ''}${s.stderr ?? ''}`;
     const loggedIn = s.status === 0 && /logged in/i.test(out) ? 'yes' : s.status === 0 ? 'unknown' : 'no';
     const usesApiKey = /api key/i.test(out);
@@ -74,7 +74,7 @@ export async function runCodex(prompt: string, timeoutMs = 120_000): Promise<str
     // プロンプトは標準入力で渡す（コマンドラインに利用者データを含めない）
     const args = ['exec', '--sandbox', 'read-only', '--skip-git-repo-check', '--ephemeral', '--color', 'never', '-C', dir, '-o', outFile, '-'];
     await new Promise<void>((resolve, reject) => {
-      const p = spawn(BIN, args, { shell: isWin, env: childEnv(), cwd: dir, stdio: ['pipe', 'ignore', 'pipe'] });
+      const p = spawn(bin(), args, { shell: isWin, env: childEnv(), cwd: dir, stdio: ['pipe', 'ignore', 'pipe'] });
       let err = '';
       p.stderr.on('data', (d) => (err = (err + d).slice(-4000)));
       const t = setTimeout(() => {

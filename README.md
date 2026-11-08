@@ -9,7 +9,7 @@
 
 - 管理画面は日本語。データはすべてこの PC 内（`data/`）に保存します。
 - 既定ではローカル接続（127.0.0.1）のみ受け付けます。
-- AI なしで全フローが動きます（分析＝ルール、モック・営業文＝テンプレート）。AI（Codex CLI）は営業文の推敲だけに任意・承認制で使えます。
+- AI なしで全フローが動きます（分析＝ルール、モック・営業文＝テンプレート）。AI は営業文の推敲だけに任意・承認制で使えます。既定は **Claude Code（Claude の Pro / Max プラン）**、ChatGPT 契約がある場合は Codex CLI にも切り替えられます。
 - 送信は現在 **模擬送信のみ**（外部には一切送信しません）。実送信は未実装です。
 
 ## Windows でのセットアップと起動
@@ -27,7 +27,7 @@ PowerShell で操作する場合:
 ```powershell
 cd C:\Users\<you>\mock-first-sales
 npm ci
-npm run doctor        # Node / ブラウザ / Codex の確認
+npm run doctor        # Node / ブラウザ / Claude Code の確認
 npm run seed:demo     # 架空企業 6 件（うち除外 2・重複 1）と架空の送信者情報を投入（任意）
 npm start             # http://127.0.0.1:8787/
 ```
@@ -56,6 +56,15 @@ npm start             # http://127.0.0.1:8787/
 | `npm run restore -- <フォルダ>` | 復元（アプリ停止中に実行。復元前データは自動退避） |
 | `npm run doctor` | 環境チェック |
 | `npm run typecheck` | 型チェック |
+
+## AI（Claude プラン）を使う場合
+
+1. Claude Code をインストールし、PowerShell で `claude` を一度起動して **Pro / Max プランのアカウント**でログイン（Claude Console のアカウントは選ばない）。
+2. 管理画面「送信者情報・連携設定」→ AI 連携を有効化、「Claude Code」を選択。
+3. 営業文の画面で「送信内容を確認する」→ 送信される全文を確認して同意 → 推敲結果は事実（URL・閲覧コード・署名・配信停止）が保たれている場合だけ反映。
+
+- 利用枠は Claude（チャット）と Claude Code で共通です。上限に達した場合はエラーとして表示し、追加クレジットや API キーには切り替えません。
+- PC に `ANTHROPIC_API_KEY` が設定されていても、本アプリは子プロセスに渡しません（API 従量課金を避けるため）。
 
 ## 設定
 

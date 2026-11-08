@@ -8,7 +8,7 @@
 |---|---|---|
 | Node.js 22.13 以上（LTS） | PowerShell で `node -v` | https://nodejs.org/ |
 | Microsoft Edge（標準搭載）または Google Chrome | `npm run doctor` | — |
-| Codex CLI（任意・AI 推敲を使う場合のみ） | `codex --version` | `npm i -g @openai/codex` |
+| Claude Code（任意・AI 推敲を使う場合のみ） | `claude --version` | https://claude.com/claude-code （インストール後 `claude` を起動し Pro/Max プランでログイン） |
 
 Docker・WSL・Visual Studio Build Tools は不要です（ネイティブビルドが必要な依存を使っていません。DB は Node 組み込みの `node:sqlite`、ブラウザは PC にインストール済みの Edge を使用）。
 
@@ -50,7 +50,8 @@ npm run seed:demo
 
 1. `npm ci` がエラーなく完了する。
 2. `npm run doctor` で Node.js OK、ブラウザ OK（msedge）と表示される。
-3. `npm test` がすべて成功する（Codex アダプターのテストは Windows ではスキップ）。
+3. `npm test` がすべて成功する（AI アダプターの偽 CLI テストは Windows ではスキップ）。
+3-2. （AI を使う場合）管理画面で AI 連携を有効にし、営業文画面の「送信内容を確認する」→ 同意して送信 → 推敲結果が反映される。
 4. `npm run e2e` がすべて成功し、`docs\verification\E2E_RESULT.md` が作成される。
 5. `npm start` → ブラウザで管理画面を開き、初期設定・ログインできる。
 6. 架空企業 3 社が「承認待ち」まで進む（企業詳細の分析結果にスクリーンショットが表示される）。
@@ -64,7 +65,8 @@ npm run seed:demo
 | スクリーンショットが「未確認」になる | `npm run doctor` でブラウザを確認。Edge のパスを `.env` の `BROWSER_PATH` に指定（例: `C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe`） |
 | ポート使用中で起動しない | `.env` の `PORT` を変更 |
 | 文字化け | `setup.cmd` / `start.cmd` は UTF-8（chcp 65001）。PowerShell 7 の利用を推奨 |
-| `codex` が見つからない | AI 推敲を使う場合のみ `npm i -g @openai/codex` → `codex login`（ChatGPT でサインイン） |
+| `claude` が見つからない | AI 推敲を使う場合のみ Claude Code をインストールし、新しい PowerShell を開いて `claude --version` を確認 |
+| AI 推敲で「利用上限」と表示される | Claude プランの 5 時間枠・週枠に達しています。リセットを待ってください（本アプリは追加クレジットや API キーに切り替えません） |
 | 社内プロキシ環境で `npm ci` が失敗 | `npm config set proxy http://...` / `https-proxy` を設定 |
 
 ## 7. データの場所

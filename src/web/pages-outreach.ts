@@ -17,6 +17,10 @@ import { getSender } from '../outreach/draft.js';
 import { latestAnalysis, findingsOf } from '../analysis/analyze.js';
 import { CATEGORIES } from '../analysis/rules.js';
 import { buildRefinePrompt, runCodex, validateRefined, codexStatus } from '../ai/codex.js';
+import { runClaude, claudeStatus } from '../ai/claude.js';
+
+type AiSettings = { enabled: boolean; provider: 'claude' | 'codex' };
+const AI_DEFAULT: AiSettings = { enabled: false, provider: 'claude' };
 import { logUsage } from '../domain/usage.js';
 
 const MOCK_IFRAME_CSP = "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; form-action 'self'; frame-ancestors 'self'; base-uri 'none'";
@@ -117,7 +121,7 @@ ${postButton(s, `/admin/mocks/${m.id}/revoke`, '失効させる', 'ng')}
     const blockers = approvalBlockers(db, cfg, d);
     const hash = contentHash(db, d);
     const urls = previewUrls(cfg, m);
-    const ai = getSetting(db, 'ai', { enabled: false });
+    const ai = getSetting<AiSettings>(db, 'ai', AI_DEFAULT);
     const methodBadge = d.generation_method.includes('ai') ? html`<span class="badge src-ai">AI推敲あり</span>` : html`<span class="badge src-template">テンプレート生成</span>`;
     const body = html`<h1>営業文の確認・編集：${co.name}</h1>
 <div class="next"><b>承認状態：</b>${{ none: '未承認', valid: `承認済み（${fmt(st.approval?.approved_at)}、期限 ${fmt(st.approval?.expires_at)}）`, invalidated: `承認解除（${st.reason}）`, expired: '承認期限切れ' }[st.state]}
@@ -166,15 +170,25 @@ ${ai.enabled ? html`<form method="post" action="/admin/drafts/${d.id}/ai-preview
     const a = latestAnalysis(db, d.company_id);
     const obs = a ? findingsOf(db, a.id).filter((f) => f.status === 'issue').map((f) => `${CATEGORIES[f.category]}: ${f.fact}`) : [];
     const prompt = buildRefinePrompt({ companyName: co.name, observations: obs, draftBody: d.body });
-    const st = codexStatus();
-    return c.html(page('AI 推敲の確認', 'approvals', s, html`<h1>外部 AI（Codex CLI）へ送信する内容の確認</h1>
-<div class="card"><p><b>送信先：</b>Codex CLI（ChatGPT ログイン）→ OpenAI のサーバー</p><p><b>必要性：</b>営業文の言い回しを整えるため。事実・URL・署名は変更させません。</p>
-<p><b>費用：</b>ChatGPT プランの Codex 利用枠を消費します（金額は未計測。利用枠には上限があります）。API キーへの自動切替は行いません。</p>
-<p><b>Codex の状態：</b>${st.installed ? `インストール済み ${st.version}` : '未インストール'}／ログイン: ${st.loggedIn}／${st.detail}</p></div>
+    const ai = getSetting<AiSettings>(db, 'ai', AI_DEFAULT);
+    const isClaude = ai.provider !== 'codex';
+    const cl = isClaude ? claudeStatus() : null;
+    const cx = isClaude ? null : codexStatus();
+    const ready = isClaude ? !!cl?.installed : !!cx?.installed && cx.loggedIn !== 'no';
+    return c.html(page('AI 推敲の確認', 'approvals', s, html`<h1>外部 AI（${isClaude ? 'Claude Code' : 'Codex CLI'}）へ送信する内容の確認</h1>
+<div class="card">${isClaude
+      ? html`<p><b>送信先：</b>Claude Code（Claude の Pro/Max プランでログイン）→ Anthropic のサーバー</p>
+<p><b>費用：</b>Claude プランの利用枠（Claude・Claude Code 共通の 5 時間枠・週枠）を消費します。金額は未計測です。API キー・追加の利用クレジットへの自動切替は行いません（ANTHROPIC_API_KEY は子プロセスに渡しません）。</p>
+<p><b>Claude Code の状態：</b>${cl!.installed ? `インストール済み ${cl!.version}` : '未インストール'}／${cl!.detail}</p>`
+      : html`<p><b>送信先：</b>Codex CLI（ChatGPT ログイン）→ OpenAI のサーバー</p>
+<p><b>費用：</b>ChatGPT プランの Codex 利用枠を消費します（金額は未計測）。API キーへの自動切替は行いません。</p>
+<p><b>Codex の状態：</b>${cx!.installed ? `インストール済み ${cx!.version}` : '未インストール'}／ログイン: ${cx!.loggedIn}／${cx!.detail}</p>`}
+<p><b>必要性：</b>営業文の言い回しを整えるため。事実・URL・署名は変更させません（変更されていれば採用しません）。</p>
+<p><b>AI に許可する操作：</b>文章の生成のみ（ファイル操作・コマンド実行・Web 取得は禁止）</p></div>
 <h2>送信される全文</h2><pre class="small">${prompt}</pre>
 <form method="post" action="/admin/drafts/${d.id}/ai-run" class="card">${csrfField(s)}<input type="hidden" name="prompt_hash" value="${contentHash(db, d)}">
 <label><input type="checkbox" name="consent" required> 上記の内容（宛先企業名・観察内容・下書き本文）を外部 AI に送信することに同意します</label>
-<p><button type="submit" ${st.installed && st.loggedIn !== 'no' ? '' : 'disabled'}>同意して送信</button> <a class="btn sec" href="/admin/drafts/${d.id}">やめる</a></p></form>`));
+<p><button type="submit" ${ready ? '' : 'disabled'}>同意して送信</button> <a class="btn sec" href="/admin/drafts/${d.id}">やめる</a></p></form>`));
   });
 
   app.post('/admin/drafts/:id/ai-run', async (c) => {
@@ -190,17 +204,29 @@ ${ai.enabled ? html`<form method="post" action="/admin/drafts/${d.id}/ai-preview
     const a = latestAnalysis(db, d.company_id);
     const obs = a ? findingsOf(db, a.id).filter((x) => x.status === 'issue').map((x) => `${CATEGORIES[x.category]}: ${x.fact}`) : [];
     const sender = getSender(db);
-    audit(db, `admin:${s.adminId}`, 'ai.send', `draft:${id}`, 'codex exec');
+    const ai = getSetting<AiSettings>(db, 'ai', AI_DEFAULT);
+    if (!ai.enabled) return redirectFlash(c, `/admin/drafts/${id}`, { err: 'AI 連携が無効です' });
+    const provider = ai.provider === 'codex' ? 'codex-cli' : 'claude-code';
+    audit(db, `admin:${s.adminId}`, 'ai.send', `draft:${id}`, provider);
     try {
-      const out = await runCodex(buildRefinePrompt({ companyName: co.name, observations: obs, draftBody: d.body }));
-      logUsage(db, { service: 'codex-cli', operation: 'refine-draft', companyId: co.id, units: '1 call', costStatus: 'plan_quota' });
+      const prompt = buildRefinePrompt({ companyName: co.name, observations: obs, draftBody: d.body });
+      let out: string;
+      let detail = '';
+      if (provider === 'claude-code') {
+        const r = await runClaude(prompt);
+        out = r.text;
+        if (r.estimatedUsd !== null) detail = `Claude Code 表示の API 換算推定 $${r.estimatedUsd.toFixed(4)}（プラン利用時は請求額ではない）`;
+      } else {
+        out = await runCodex(prompt);
+      }
+      logUsage(db, { service: provider, operation: 'refine-draft', companyId: co.id, units: '1 call', costStatus: 'plan_quota', detail });
       const v = validateRefined(out, [m.view_code, previewUrls(cfg, m).external ?? previewUrls(cfg, m).local, sender.companyName, sender.address, sender.email, '配信停止']);
       if (!v.ok) return redirectFlash(c, `/admin/drafts/${id}`, { err: `AI の出力を採用しませんでした: ${v.reason}` });
       updateDraft(db, cfg, id, { subject: d.subject, body: v.body, recipient: d.recipient }, `admin:${s.adminId}`, 'ai');
       return redirectFlash(c, `/admin/drafts/${id}`, { ok: 'AI の推敲結果を反映しました。必ず内容を確認してください（承認は解除されています）' });
     } catch (e) {
-      logUsage(db, { service: 'codex-cli', operation: 'refine-draft(failed)', companyId: co.id, costStatus: 'unmeasured', detail: (e as Error).message });
-      return redirectFlash(c, `/admin/drafts/${id}`, { err: `Codex 実行に失敗しました: ${(e as Error).message}` });
+      logUsage(db, { service: provider, operation: 'refine-draft(failed)', companyId: co.id, costStatus: 'unmeasured', detail: (e as Error).message });
+      return redirectFlash(c, `/admin/drafts/${id}`, { err: `AI の実行に失敗しました: ${(e as Error).message}` });
     }
   });
 

@@ -16,6 +16,7 @@ import { listJobs, retryJob, setJobPaused, cancelJob, JOB_LABELS, JOB_STATUS_LAB
 import { SERVICES, COST_STATUS_LABELS } from '../domain/usage.js';
 import { addSuppression, listSuppressions } from '../domain/eligibility.js';
 import { codexStatus } from '../ai/codex.js';
+import { claudeStatus } from '../ai/claude.js';
 import { browserUnavailableReason } from '../analysis/browser.js';
 import { IMPLEMENTATION_STATUS } from '../status.js';
 
@@ -42,7 +43,7 @@ export function registerMisc(app: Hono<Env>, ctx: Ctx) {
 <div class="kpi">${Object.entries(STATUS_LABELS).map(([k, v]) => html`<div><span class="small mute">${v}</span><b><a href="/admin/companies?status=${k}" style="text-decoration:none">${counts[k] ?? 0}</a></b></div>`)}</div>
 <div class="grid" style="margin-top:16px"><div class="card"><h2 style="margin-top:0">次に必要な操作</h2>${todo.length ? html`<ul>${todo.map((t) => html`<li>${t}</li>`)}</ul>` : html`<p class="mute">現在必要な操作はありません</p>`}</div>
 <div class="card"><h2 style="margin-top:0">処理状況</h2><p>実行中・待機中のジョブ: <b>${jobsActive}</b>／失敗: <b>${jobsFailed}</b>　<a href="/admin/jobs">ジョブ画面へ</a></p>
-<p class="small mute">送信方式: <b>模擬送信のみ</b>（実送信は未実装）／AI: ${getSetting(db, 'ai', { enabled: false }).enabled ? '有効（承認制）' : '無効（ルール・テンプレートのみ）'}</p>
+<p class="small mute">送信方式: <b>模擬送信のみ</b>（実送信は未実装）／AI: ${getSetting(db, 'ai', { enabled: false, provider: 'claude' }).enabled ? `有効（${getSetting(db, 'ai', { enabled: false, provider: 'claude' }).provider === 'codex' ? 'Codex CLI' : 'Claude Code'}・承認制）` : '無効（ルール・テンプレートのみ）'}</p>
 <p class="small mute">ブラウザ（撮影）: ${browserUnavailableReason() ? `未接続 — ${browserUnavailableReason()}` : '初回撮影時に接続'}</p></div></div>
 <div class="card"><h2 style="margin-top:0">最近の操作</h2><table>${recent.map((r) => html`<tr><td class="small">${fmt(r.created_at)}</td><td>${r.actor}</td><td>${r.action}</td><td class="small">${r.target} ${r.detail}</td></tr>`)}</table></div>`;
     return c.html(page('ダッシュボード', 'home', s, body, flashOf(c), { refresh: jobsActive ? 5 : undefined }));
@@ -52,20 +53,26 @@ export function registerMisc(app: Hono<Env>, ctx: Ctx) {
   app.get('/admin/settings', (c) => {
     const s = c.get('session');
     const sender = getSender(db);
-    const ai = getSetting(db, 'ai', { enabled: false });
-    const cx = c.req.query('check') ? codexStatus() : null;
+    const ai = getSetting(db, 'ai', { enabled: false, provider: 'claude' as 'claude' | 'codex' });
+    const chk = !!c.req.query('check');
+    const cl = chk ? claudeStatus() : null;
+    const cx = chk ? codexStatus() : null;
     const field = (k: keyof SenderProfile, label: string, type = 'text') => html`<div><label>${label}</label><input name="${k}" type="${type}" value="${sender[k]}" style="width:100%"></div>`;
     const body = html`<h1>送信者情報・連携設定</h1>
 <form method="post" action="/admin/settings/sender" class="card">${csrfField(s)}<h2 style="margin-top:0">送信者情報（営業文の署名・法令表示に使用）</h2>
 <div class="grid">${field('companyName', '会社名 *')}${field('contactName', '担当者氏名 *')}${field('address', '所在地（住所） *')}${field('phone', '電話番号')}${field('email', '連絡先メール *', 'email')}${field('optOutEmail', '配信停止受付メール（空欄なら連絡先メール）', 'email')}</div>
 <p class="small mute">特定電子メール法で求められる送信者の氏名・名称、住所、受信拒否の連絡先などの表示に使います。正確な情報を入力してください。</p><p><button type="submit">保存</button></p></form>
 
-<form method="post" action="/admin/settings/ai" class="card">${csrfField(s)}<h2 style="margin-top:0">AI 連携（Codex CLI・任意）</h2>
-<label><input type="checkbox" name="enabled" ${ai.enabled ? raw('checked') : ''}> 営業文の推敲に Codex CLI を使う（実行ごとに送信内容を表示して同意を求めます）</label>
-<p class="small">ChatGPT ログインの Codex CLI のみを使用し、API キー（従量課金）へ自動で切り替えることはありません。分析・モック生成・営業文の作成は AI なしで動作します。</p>
-<p class="small">準備（PowerShell）: <code>npm i -g @openai/codex</code> → <code>codex login</code>（「Sign in with ChatGPT」を選択）</p>
-<p><button type="submit">保存</button> <a class="btn sec" href="/admin/settings?check=1">Codex の状態を確認</a></p>
-${cx ? html`<p class="small">インストール: ${cx.installed ? `済（${cx.version}）` : '未'}／ログイン: ${cx.loggedIn}／${cx.detail}</p>` : ''}</form>
+<form method="post" action="/admin/settings/ai" class="card">${csrfField(s)}<h2 style="margin-top:0">AI 連携（任意）</h2>
+<label><input type="checkbox" name="enabled" ${ai.enabled ? raw('checked') : ''}> 営業文の推敲に AI を使う（実行ごとに送信内容を表示して同意を求めます）</label>
+<label>使用する AI</label><select name="provider">
+<option value="claude" ${ai.provider !== 'codex' ? raw('selected') : ''}>Claude Code（Claude の Pro / Max プラン）— 推奨</option>
+<option value="codex" ${ai.provider === 'codex' ? raw('selected') : ''}>Codex CLI（ChatGPT プラン）</option></select>
+<p class="small">プランのログインで動く CLI だけを使い、API キー（従量課金）や追加の利用クレジットへ自動で切り替えることはありません。分析・モック生成・営業文の作成は AI なしで動作します。</p>
+<p class="small">Claude Code の準備: Claude Code をインストール → PowerShell で <code>claude</code> を一度起動し、Pro/Max プランのアカウントでログイン（Claude Console のアカウントは選ばない）。利用枠は Claude（チャット）と共通です。</p>
+<p><button type="submit">保存</button> <a class="btn sec" href="/admin/settings?check=1">AI の状態を確認</a></p>
+${cl ? html`<p class="small">Claude Code: ${cl.installed ? `インストール済み（${cl.version}）` : '未インストール'}／${cl.detail}</p>` : ''}
+${cx ? html`<p class="small">Codex CLI: ${cx.installed ? `インストール済み（${cx.version}）／ログイン: ${cx.loggedIn}` : '未インストール'}</p>` : ''}</form>
 
 <form method="post" action="/admin/settings/gbiz" class="card">${csrfField(s)}<h2 style="margin-top:0">gBizINFO 連携（任意）</h2>
 <p>状態: ${getSecret(cfg.dataDir, 'gbizinfoToken') ? html`<span class="badge ok">トークン設定済み</span>` : html`<span class="badge warn">未設定（外部条件待ち）</span>`}</p>
@@ -99,8 +106,9 @@ ${cx ? html`<p class="small">インストール: ${cx.installed ? `済（${cx.ve
   });
   app.post('/admin/settings/ai', async (c) => {
     const f = await form(c);
-    setSetting(db, 'ai', { enabled: str(f, 'enabled') === 'on' });
-    audit(db, `admin:${c.get('session').adminId}`, 'settings.ai', '', str(f, 'enabled'));
+    const provider = str(f, 'provider') === 'codex' ? 'codex' : 'claude';
+    setSetting(db, 'ai', { enabled: str(f, 'enabled') === 'on', provider });
+    audit(db, `admin:${c.get('session').adminId}`, 'settings.ai', '', `${str(f, 'enabled')} ${provider}`);
     return redirectFlash(c, '/admin/settings', { ok: 'AI 連携の設定を保存しました' });
   });
   app.post('/admin/settings/gbiz', async (c) => {
