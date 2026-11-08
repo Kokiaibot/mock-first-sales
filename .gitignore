@@ -1,0 +1,12 @@
+node_modules/
+# 顧客データ・認証情報・分析画像・バックアップは絶対にコミットしない
+data/
+!data/.gitkeep
+.env
+.env.*
+!.env.example
+*.sqlite
+*.sqlite-*
+*.eml
+test-results/
+tmp/

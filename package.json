@@ -1,0 +1,34 @@
+{
+  "name": "mock-first-sales",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AIモック先出し型・法人営業支援システム（ローカルWebアプリ）",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "start": "tsx src/main.ts",
+    "dev": "tsx watch src/main.ts",
+    "seed:demo": "tsx scripts/seed-demo.ts",
+    "backup": "tsx scripts/backup.ts",
+    "restore": "tsx scripts/restore.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "e2e": "tsx scripts/e2e.ts",
+    "doctor": "tsx scripts/doctor.ts"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@hono/node-server": "^2.1.6",
+    "hono": "^4.13.17",
+    "node-html-parser": "^9.0.7",
+    "playwright-core": "^1.65.0",
+    "tsx": "^4.23.15"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "typescript": "^5.9.3",
+    "vitest": "^5.1.0"
+  }
+}
