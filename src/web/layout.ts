@@ -31,7 +31,7 @@ main{padding:22px 28px;max-width:1400px}h1{font-size:21px;margin:0 0 14px}h2{fon
 .card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:16px}
 table{width:100%;border-collapse:collapse;background:#fff}th,td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
 th{background:#f9fafb;font-weight:600;font-size:12px;color:#374151;white-space:nowrap}
-.btn,button{display:inline-block;background:var(--p);color:#fff;border:0;border-radius:6px;padding:7px 14px;font:inherit;cursor:pointer;text-decoration:none}
+.btn,button{display:inline-block;white-space:nowrap;background:var(--p);color:#fff;border:0;border-radius:6px;padding:7px 14px;font:inherit;cursor:pointer;text-decoration:none}
 .btn.sec,button.sec{background:#fff;color:var(--fg);border:1px solid #cbd2d9}.btn.ng,button.ng{background:var(--ng)}.btn.ok,button.ok{background:var(--ok)}
 button:disabled{background:#9ca3af;cursor:not-allowed}
 input,select,textarea{font:inherit;padding:7px 9px;border:1px solid #cbd2d9;border-radius:6px;background:#fff;max-width:100%}

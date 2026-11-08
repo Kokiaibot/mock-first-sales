@@ -24,6 +24,9 @@ export function projectRoot(): string {
 }
 
 export function loadConfig(overrides: Partial<AppConfig> = {}): AppConfig {
+  // .env があれば読み込む（既存の環境変数は上書きしない）
+  const envFile = path.join(ROOT, '.env');
+  if (!process.env.VITEST && fs.existsSync(envFile)) process.loadEnvFile(envFile);
   const env = process.env;
   const host = overrides.host ?? env.HOST ?? '127.0.0.1';
   const allowRemote = overrides.allowRemote ?? env.ALLOW_REMOTE === '1';

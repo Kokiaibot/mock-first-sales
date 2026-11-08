@@ -8,13 +8,6 @@ import { recoverInterruptedSends } from './outreach/approval.js';
 import { closeBrowser } from './analysis/browser.js';
 import { needsSetup } from './auth.js';
 
-// node:sqlite の実験的機能警告だけを抑制（他の警告は表示）
-const origEmit = process.emitWarning;
-process.emitWarning = ((w: any, ...rest: any[]) => {
-  if (String(w).includes('SQLite is an experimental feature')) return;
-  return (origEmit as any).call(process, w, ...rest);
-}) as typeof process.emitWarning;
-
 const cfg = loadConfig();
 const db = openDb(cfg.dataDir);
 const resumed = recoverJobs(db);

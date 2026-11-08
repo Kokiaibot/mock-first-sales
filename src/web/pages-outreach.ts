@@ -41,9 +41,9 @@ export function registerOutreach(app: Hono<Env>, ctx: Ctx) {
 <b>管理者確認：</b>${m.admin_reviewed_at ? `確認済み（${fmt(m.admin_reviewed_at)}）` : '未確認 — 内容を確認して「確認済みにする」を押してください（承認の前提条件）'}</div>
 <div class="grid">
 <div class="card"><h2 style="margin-top:0">顧客向けプレビュー</h2>
-<table><tr><th>ローカルURL</th><td><code>${urls.local}</code><div class="small mute">この PC からのみ閲覧可能（相手先からは見られません）</div></td></tr>
+<table><tr><th>ローカルURL</th><td><code id="local-url">${urls.local}</code><div class="small mute">この PC からのみ閲覧可能（相手先からは見られません）</div></td></tr>
 <tr><th>外部閲覧URL</th><td>${urls.external ? html`<code>${urls.external}</code>` : html`<span class="badge warn">未設定</span><div class="small mute">公開環境へのデプロイは承認後に行う段階のため未実装です</div>`}</td></tr>
-<tr><th>閲覧コード</th><td><code style="font-size:16px;letter-spacing:.15em">${m.view_code}</code></td></tr>
+<tr><th>閲覧コード</th><td><code id="view-code" style="font-size:16px;letter-spacing:.15em">${m.view_code}</code></td></tr>
 <tr><th>有効期限</th><td>${fmt(m.expires_at)}</td></tr>
 <tr><th>識別子</th><td class="small">推測困難なランダム値（192bit）。検索エンジン登録防止: noindex メタ・X-Robots-Tag・robots.txt</td></tr></table>
 <div class="row" style="margin-top:10px">${m.admin_reviewed_at ? '' : postButton(s, `/admin/mocks/${m.id}/review`, '内容を確認した（確認済みにする）', 'ok')}

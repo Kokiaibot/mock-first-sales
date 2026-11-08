@@ -184,7 +184,8 @@ export function buildSpec(company: Row, pages: PageFacts[], findings: Row[]): Mo
   const findingMap = new Map(findings.map((f) => [Number(f.category), f]));
   const improvements = [...issues].sort().map((cat) => {
     const f = findingMap.get(cat)!;
-    return { category: String(f.category), before: String(f.fact).slice(0, 140), after: String(f.policy) };
+    const pts: string[] = JSON.parse(f.issue_points || '[]');
+    return { category: String(f.category), before: (pts.length ? pts.join('。') : String(f.fact)).slice(0, 160), after: String(f.policy) };
   });
 
   const layouts = meta.layouts;

@@ -1,0 +1,10 @@
+mock-first-sales
+Copyright (c) 2026 利用者
+
+This product includes material derived from sales-claw-ts
+(https://github.com/joseikininsight-hue/sales-claw-ts, commit 76b886dc96f03e172d7ad1b29ce7f99cf6fd9391),
+Copyright (c) 2025-2026 Sales Claw contributors, licensed under the MIT License.
+See src/vendor/sales-claw/LICENSE.
+
+Third-party npm packages are listed in package-lock.json with their own licenses
+(hono: MIT, @hono/node-server: MIT, node-html-parser: MIT, playwright-core: Apache-2.0, tsx: MIT).

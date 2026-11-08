@@ -8,15 +8,16 @@
     "node": ">=22.13.0"
   },
   "scripts": {
-    "start": "tsx src/main.ts",
+    "start": "node --disable-warning=ExperimentalWarning --import tsx src/main.ts",
     "dev": "tsx watch src/main.ts",
-    "seed:demo": "tsx scripts/seed-demo.ts",
-    "backup": "tsx scripts/backup.ts",
-    "restore": "tsx scripts/restore.ts",
+    "seed:demo": "node --disable-warning=ExperimentalWarning --import tsx scripts/seed-demo.ts",
+    "backup": "node --disable-warning=ExperimentalWarning --import tsx scripts/backup.ts",
+    "restore": "node --disable-warning=ExperimentalWarning --import tsx scripts/restore.ts",
+    "doctor": "node --disable-warning=ExperimentalWarning --import tsx scripts/doctor.ts",
+    "docs": "node --disable-warning=ExperimentalWarning --import tsx scripts/gen-docs.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "e2e": "tsx scripts/e2e.ts",
-    "doctor": "tsx scripts/doctor.ts"
+    "e2e": "node --disable-warning=ExperimentalWarning --import tsx scripts/e2e.ts"
   },
   "license": "MIT",
   "dependencies": {

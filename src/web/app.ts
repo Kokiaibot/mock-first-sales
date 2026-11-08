@@ -44,7 +44,7 @@ export function createApp(db: DB, cfg: AppConfig) {
     }
     await next();
     c.header('X-Content-Type-Options', 'nosniff');
-    c.header('Referrer-Policy', 'no-referrer');
+    c.header('Referrer-Policy', 'same-origin'); // no-referrer だとフォーム POST の Origin が null になる
     c.header('X-Robots-Tag', 'noindex, nofollow, noarchive');
     if (!c.res.headers.get('Content-Security-Policy')) c.header('Content-Security-Policy', ADMIN_CSP);
     if (!c.res.headers.get('Cache-Control')) c.header('Cache-Control', 'no-store');
